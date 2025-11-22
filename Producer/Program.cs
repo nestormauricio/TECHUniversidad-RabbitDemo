@@ -1,4 +1,103 @@
-﻿// using RabbitMQ.Client;
+﻿using RabbitMQ.Client;
+using System;
+using System.Text;
+
+class Program
+{
+    static void Main()
+    {
+        var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest" };
+        using var connection = factory.CreateConnection();
+        using var channel = connection.CreateModel();
+
+        // Exchange durable
+        channel.ExchangeDeclare(exchange: "demo-exchange", type: "direct", durable: true, autoDelete: false);
+
+        // Propiedades para persistencia
+        var properties = channel.CreateBasicProperties();
+        properties.Persistent = true;
+
+        for (int i = 1; i <= 5; i++)
+        {
+            var message = $"Mensaje {i} desde el exchange con persistencia!";
+            var body = Encoding.UTF8.GetBytes(message);
+            channel.BasicPublish(exchange: "demo-exchange", routingKey: "demo.key", basicProperties: properties, body: body);
+            Console.WriteLine($"[Producer] Mensaje enviado: {message}");
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using RabbitMQ.Client;
+// using System;
+// using System.Text;
+
+// class Program
+// {
+//     static void Main()
+//     {
+//         var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest" };
+//         using var connection = factory.CreateConnection();
+//         using var channel = connection.CreateModel();
+
+//         // Exchange durable
+//         channel.ExchangeDeclare(exchange: "demo-exchange", type: "direct", durable: true, autoDelete: false);
+// // channel.ExchangeDeclare(exchange: "demo-exchange", type: "direct_", durable: true, autoDelete: false);
+
+//         // Mensaje persistente
+//         var properties = channel.CreateBasicProperties();
+//         properties.Persistent = true;
+
+//         var message = "Hola desde el exchange con persistencia!";
+//         var body = Encoding.UTF8.GetBytes(message);
+
+//         channel.BasicPublish(exchange: "demo-exchange", routingKey: "demo.key", basicProperties: properties, body: body);
+
+//         Console.WriteLine("[Producer] Mensaje enviado al exchange.");
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using RabbitMQ.Client;
 // using System;
 // using System.Text;
 
@@ -49,53 +148,6 @@
 //     }
 // }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-using RabbitMQ.Client;
-using System;
-using System.Text;
-
-class Program
-{
-    static void Main()
-    {
-        var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest" };
-        using var connection = factory.CreateConnection();
-        using var channel = connection.CreateModel();
-
-        // Exchange durable
-        channel.ExchangeDeclare(exchange: "demo-exchange", type: "direct", durable: true, autoDelete: false);
-// channel.ExchangeDeclare(exchange: "demo-exchange", type: "direct_", durable: true, autoDelete: false);
-
-        // Mensaje persistente
-        var properties = channel.CreateBasicProperties();
-        properties.Persistent = true;
-
-        var message = "Hola desde el exchange con persistencia!";
-        var body = Encoding.UTF8.GetBytes(message);
-
-        channel.BasicPublish(exchange: "demo-exchange", routingKey: "demo.key", basicProperties: properties, body: body);
-
-        Console.WriteLine("[Producer] Mensaje enviado al exchange.");
-    }
-}
 
 
 
