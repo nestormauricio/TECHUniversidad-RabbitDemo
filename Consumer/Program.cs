@@ -7,34 +7,26 @@ class Program
 {
     static void Main()
     {
-        var factory = new ConnectionFactory()
-        {
-            HostName = "localhost",
-            UserName = "guest",
-            Password = "guest"
-        };
-
+        var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest" };
         using var connection = factory.CreateConnection();
         using var channel = connection.CreateModel();
 
-        // 1. Declarar Dead Letter Exchange y Queue
-        channel.ExchangeDeclare("demo-dlx-exchange", "direct", durable: true, autoDelete: false, arguments: null);
-        channel.QueueDeclare("demo-dlx-queue", durable: true, exclusive: false, autoDelete: false, arguments: null);
-        channel.QueueBind("demo-dlx-queue", "demo-dlx-exchange", "dlx.key");
+        // Exchange durable
+        channel.ExchangeDeclare(exchange: "demo-exchange", type: "direct", durable: true, autoDelete: false);
 
-        // 2. Declarar exchange principal durable
-        channel.ExchangeDeclare("demo-exchange", "direct", durable: true, autoDelete: false, arguments: null);
-
-        // 3. Declarar queue principal con DLX
-        var queueArgs = new System.Collections.Generic.Dictionary<string, object>
+        // Queue durable con DLX
+        var args = new Dictionary<string, object>
         {
-            { "x-dead-letter-exchange", "demo-dlx-exchange" },
-            { "x-dead-letter-routing-key", "dlx.key" }
+            { "x-dead-letter-exchange", "dlx-exchange" }
         };
-        channel.QueueDeclare("demo-queue", durable: true, exclusive: false, autoDelete: false, arguments: queueArgs);
 
-        // 4. Hacer binding
-        channel.QueueBind("demo-queue", "demo-exchange", "demo.key");
+        channel.QueueDeclare(queue: "demo-queue", durable: true, exclusive: false, autoDelete: false, arguments: args);
+        channel.QueueBind(queue: "demo-queue", exchange: "demo-exchange", routingKey: "demo.key");
+
+        // DLX
+        channel.ExchangeDeclare(exchange: "dlx-exchange", type: "fanout", durable: true, autoDelete: false);
+        channel.QueueDeclare(queue: "dlx-queue", durable: true, exclusive: false, autoDelete: false);
+        channel.QueueBind(queue: "dlx-queue", exchange: "dlx-exchange", routingKey: "");
 
         var consumer = new EventingBasicConsumer(channel);
         consumer.Received += (model, ea) =>
@@ -44,12 +36,84 @@ class Program
             Console.WriteLine($"[Consumer] Mensaje recibido: {message}");
         };
 
-        channel.BasicConsume("demo-queue", autoAck: true, consumer: consumer);
+        channel.BasicConsume(queue: "demo-queue", autoAck: true, consumer: consumer);
 
         Console.WriteLine("Esperando mensajes. Presiona ENTER para salir.");
         Console.ReadLine();
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using RabbitMQ.Client;
+// using RabbitMQ.Client.Events;
+// using System;
+// using System.Text;
+
+// class Program
+// {
+//     static void Main()
+//     {
+//         var factory = new ConnectionFactory()
+//         {
+//             HostName = "localhost",
+//             UserName = "guest",
+//             Password = "guest"
+//         };
+
+//         using var connection = factory.CreateConnection();
+//         using var channel = connection.CreateModel();
+
+//         // 1. Declarar Dead Letter Exchange y Queue
+//         channel.ExchangeDeclare("demo-dlx-exchange", "direct", durable: true, autoDelete: false, arguments: null);
+//         channel.QueueDeclare("demo-dlx-queue", durable: true, exclusive: false, autoDelete: false, arguments: null);
+//         channel.QueueBind("demo-dlx-queue", "demo-dlx-exchange", "dlx.key");
+
+//         // 2. Declarar exchange principal durable
+//         channel.ExchangeDeclare("demo-exchange", "direct", durable: true, autoDelete: false, arguments: null);
+
+//         // 3. Declarar queue principal con DLX
+//         var queueArgs = new System.Collections.Generic.Dictionary<string, object>
+//         {
+//             { "x-dead-letter-exchange", "demo-dlx-exchange" },
+//             { "x-dead-letter-routing-key", "dlx.key" }
+//         };
+//         channel.QueueDeclare("demo-queue", durable: true, exclusive: false, autoDelete: false, arguments: queueArgs);
+
+//         // 4. Hacer binding
+//         channel.QueueBind("demo-queue", "demo-exchange", "demo.key");
+
+//         var consumer = new EventingBasicConsumer(channel);
+//         consumer.Received += (model, ea) =>
+//         {
+//             var body = ea.Body.ToArray();
+//             var message = Encoding.UTF8.GetString(body);
+//             Console.WriteLine($"[Consumer] Mensaje recibido: {message}");
+//         };
+
+//         channel.BasicConsume("demo-queue", autoAck: true, consumer: consumer);
+
+//         Console.WriteLine("Esperando mensajes. Presiona ENTER para salir.");
+//         Console.ReadLine();
+//     }
+// }
 
 
 
