@@ -1,4 +1,88 @@
-﻿using RabbitMQ.Client;
+﻿// using RabbitMQ.Client;
+// using System;
+// using System.Text;
+
+// class Program
+// {
+//     static void Main(string[] args)
+//     {
+//         var factory = new ConnectionFactory()
+//         {
+//             HostName = "localhost",
+//             UserName = "guest",
+//             Password = "guest"
+//         };
+
+//         using var connection = factory.CreateConnection();
+//         using var channel = connection.CreateModel();
+
+//         // 1. Declarar exchange (ya existente)
+//         channel.ExchangeDeclare(
+//             exchange: "demo-exchange",
+//             type: "direct",
+//             durable: true,      // <- persistente
+//             autoDelete: false,
+//             arguments: null
+//         );
+
+//         // 2. Declarar cola principal persistente y con DLX
+//         var queueArgs = new System.Collections.Generic.Dictionary<string, object>
+//         {
+//             { "x-dead-letter-exchange", "demo-dlx-exchange" } // <- Dead Letter Exchange
+//         };
+
+//         channel.QueueDeclare(
+//             queue: "demo-queue",
+//             durable: true,      // <- persistente
+//             exclusive: false,
+//             autoDelete: false,
+//             arguments: queueArgs
+//         );
+
+//         channel.QueueBind(
+//             queue: "demo-queue",
+//             exchange: "demo-exchange",
+//             routingKey: "demo.key"
+//         );
+
+//         // 3. Crear mensaje persistente
+//         var message = "Hola desde el exchange con persistencia!";
+//         var body = Encoding.UTF8.GetBytes(message);
+
+//         var properties = channel.CreateBasicProperties();
+//         properties.Persistent = true; // <- mensaje persistente
+
+//         // 4. Publicar al exchange
+//         channel.BasicPublish(
+//             exchange: "demo-exchange",
+//             routingKey: "demo.key",
+//             basicProperties: properties,
+//             body: body
+//         );
+
+//         Console.WriteLine("[Producer] Mensaje enviado al exchange con persistencia.");
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+using RabbitMQ.Client;
 using System;
 using System.Text;
 

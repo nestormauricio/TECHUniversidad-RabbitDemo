@@ -1,4 +1,113 @@
-﻿using RabbitMQ.Client;
+﻿// using RabbitMQ.Client;
+// using RabbitMQ.Client.Events;
+// using System;
+// using System.Text;
+
+// class Program
+// {
+//     static void Main(string[] args)
+//     {
+//         var factory = new ConnectionFactory()
+//         {
+//             HostName = "localhost",
+//             UserName = "guest",
+//             Password = "guest"
+//         };
+
+//         using var connection = factory.CreateConnection();
+//         using var channel = connection.CreateModel();
+
+//         // 1. Declarar exchange principal
+//         channel.ExchangeDeclare(
+//             exchange: "demo-exchange",
+//             type: "direct",
+//             durable: true,
+//             autoDelete: false
+//         );
+
+//         // 2. Declarar DLX y su cola
+//         channel.ExchangeDeclare(
+//             exchange: "demo-dlx-exchange",
+//             type: "direct",
+//             durable: true
+//         );
+
+//         channel.QueueDeclare(
+//             queue: "demo-dlx-queue",
+//             durable: true,
+//             exclusive: false,
+//             autoDelete: false,
+//             arguments: null
+//         );
+
+//         channel.QueueBind(
+//             queue: "demo-dlx-queue",
+//             exchange: "demo-dlx-exchange",
+//             routingKey: "dlx.key"
+//         );
+
+//         // 3. Declarar cola principal
+//         var queueArgs = new System.Collections.Generic.Dictionary<string, object>
+//         {
+//             { "x-dead-letter-exchange", "demo-dlx-exchange" } // DLX
+//         };
+
+//         channel.QueueDeclare(
+//             queue: "demo-queue",
+//             durable: true,
+//             exclusive: false,
+//             autoDelete: false,
+//             arguments: queueArgs
+//         );
+
+//         channel.QueueBind(
+//             queue: "demo-queue",
+//             exchange: "demo-exchange",
+//             routingKey: "demo.key"
+//         );
+
+//         var consumer = new EventingBasicConsumer(channel);
+//         consumer.Received += (model, ea) =>
+//         {
+//             var body = ea.Body.ToArray();
+//             var message = Encoding.UTF8.GetString(body);
+//             Console.WriteLine($"[Consumer] Mensaje recibido: {message}");
+//             // opcional: channel.BasicAck(ea.DeliveryTag, false); si quieres manual ack
+//         };
+
+//         channel.BasicConsume(
+//             queue: "demo-queue",
+//             autoAck: true,
+//             consumer: consumer
+//         );
+
+//         Console.WriteLine("Esperando mensajes. Presiona ENTER para salir.");
+//         Console.ReadLine();
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
 using System.Text;
