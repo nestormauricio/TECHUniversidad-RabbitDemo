@@ -1,4 +1,5 @@
 ﻿using RabbitMQ.Client;
+using System;
 using System.Text;
 
 class Program
@@ -12,31 +13,92 @@ class Program
             Password = "guest"
         };
 
-        using (var connection = factory.CreateConnection())
-        using (var channel = connection.CreateModel())
-        {
-            channel.QueueDeclare(
-                queue: "demo-queue",
-                durable: false,
-                exclusive: false,
-                autoDelete: false,
-                arguments: null
-            );
+        using var connection = factory.CreateConnection();
+        using var channel = connection.CreateModel();
 
-            string message = "Hola desde RabbitMQ!";
-            var body = Encoding.UTF8.GetBytes(message);
+        // 1. Declarar exchange
+        channel.ExchangeDeclare(
+            exchange: "demo-exchange",
+            type: "direct",
+            durable: false,
+            autoDelete: false,
+            arguments: null
+        );
 
-            channel.BasicPublish(
-                exchange: "",
-                routingKey: "demo-queue",
-                basicProperties: null,
-                body: body
-            );
+        // 2. Crear mensaje
+        var message = "Hola desde el exchange!";
+        var body = Encoding.UTF8.GetBytes(message);
 
-            Console.WriteLine($"[Producer] Mensaje enviado: {message}");
-        }
+        // 3. Publicar al exchange
+        channel.BasicPublish(
+            exchange: "demo-exchange",
+            routingKey: "demo.key",
+            basicProperties: null,
+            body: body
+        );
+
+        Console.WriteLine("[Producer] Mensaje enviado al exchange.");
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using RabbitMQ.Client;
+// using System.Text;
+
+// class Program
+// {
+//     static void Main(string[] args)
+//     {
+//         var factory = new ConnectionFactory()
+//         {
+//             HostName = "localhost",
+//             UserName = "guest",
+//             Password = "guest"
+//         };
+
+//         using (var connection = factory.CreateConnection())
+//         using (var channel = connection.CreateModel())
+//         {
+//             channel.QueueDeclare(
+//                 queue: "demo-queue",
+//                 durable: false,
+//                 exclusive: false,
+//                 autoDelete: false,
+//                 arguments: null
+//             );
+
+//             string message = "Hola desde RabbitMQ!";
+//             var body = Encoding.UTF8.GetBytes(message);
+
+//             channel.BasicPublish(
+//                 exchange: "",
+//                 routingKey: "demo-queue",
+//                 basicProperties: null,
+//                 body: body
+//             );
+
+//             Console.WriteLine($"[Producer] Mensaje enviado: {message}");
+//         }
+//     }
+// }
 
 
 
