@@ -1,4 +1,75 @@
-﻿using RabbitMQ.Client;
+﻿// using RabbitMQ.Client;
+// using RabbitMQ.Client.Events;
+// using System;
+// using System.Text;
+
+// class Program
+// {
+//     static void Main(string[] args)
+//     {
+//         var factory = new ConnectionFactory()
+//         {
+//             HostName = "localhost",
+//             UserName = "guest",
+//             Password = "guest"
+//         };
+
+//         using var connection = factory.CreateConnection();
+//         using var channel = connection.CreateModel();
+
+//         string queueName = "demo-queue";
+
+//         channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
+
+//         var consumer = new EventingBasicConsumer(channel);
+
+//         consumer.Received += (model, ea) =>
+//         {
+//             var body = ea.Body.ToArray();
+//             var message = Encoding.UTF8.GetString(body);
+//             Console.WriteLine($"[Consumer] Mensaje recibido: {message}");
+
+//             try
+//             {
+//                 // Simular procesamiento
+//                 // Aquí va tu lógica real
+//                 channel.BasicAck(ea.DeliveryTag, multiple: false);
+//             }
+//             catch
+//             {
+//                 // Reenviar a DLX si hay fallo
+//                 channel.BasicNack(ea.DeliveryTag, multiple: false, requeue: false);
+//             }
+//         };
+
+//         channel.BasicConsume(queueName, autoAck: false, consumer: consumer);
+
+//         Console.WriteLine("[Consumer] Esperando mensajes. Presiona CTRL+C para salir.");
+//         Console.ReadLine();
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
 using System.Text;

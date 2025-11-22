@@ -1,4 +1,74 @@
-﻿using RabbitMQ.Client;
+﻿// using RabbitMQ.Client;
+// using System;
+// using System.Text;
+
+// class Program
+// {
+//     static void Main(string[] args)
+//     {
+//         var factory = new ConnectionFactory() 
+//         { 
+//             HostName = "localhost", 
+//             UserName = "guest", 
+//             Password = "guest" 
+//         };
+
+//         using var connection = factory.CreateConnection();
+//         using var channel = connection.CreateModel();
+
+//         // Exchange principal
+//         string exchangeName = "demo-exchange";
+//         string dlxExchangeName = "demo-dlx";
+
+//         // Crear DLX
+//         channel.ExchangeDeclare(dlxExchangeName, ExchangeType.Fanout, durable: true);
+
+//         // Crear exchange principal con DLX
+//         var argsQueue = new System.Collections.Generic.Dictionary<string, object>
+//         {
+//             { "x-dead-letter-exchange", dlxExchangeName }
+//         };
+//         channel.ExchangeDeclare(exchangeName, ExchangeType.Direct, durable: true);
+
+//         string queueName = "demo-queue";
+//         channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: false, arguments: argsQueue);
+//         channel.QueueBind(queueName, exchangeName, routingKey: "demo-key");
+
+//         string message = "Mensaje de prueba con persistencia y DLX";
+//         var body = Encoding.UTF8.GetBytes(message);
+
+//         var properties = channel.CreateBasicProperties();
+//         properties.Persistent = true; // Mensaje persistente
+
+//         channel.BasicPublish(exchange: exchangeName,
+//                              routingKey: "demo-key",
+//                              basicProperties: properties,
+//                              body: body);
+
+//         Console.WriteLine("[Producer] Mensaje enviado al exchange con persistencia.");
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+using RabbitMQ.Client;
 using System;
 using System.Text;
 
@@ -12,6 +82,7 @@ class Program
 
         // Exchange durable
         channel.ExchangeDeclare(exchange: "demo-exchange", type: "direct", durable: true, autoDelete: false);
+// channel.ExchangeDeclare(exchange: "demo-exchange", type: "direct_", durable: true, autoDelete: false);
 
         // Mensaje persistente
         var properties = channel.CreateBasicProperties();
