@@ -3,7 +3,8 @@ using RabbitMQ.Client.Events;
 using System;
 using System.Text;
 using System.Collections.Generic;
-using Consumer.Repositories;   // <-- IMPORTANTE: referencia al repositorio MongoDB
+
+using Consumer.Repositories;   // MongoDB + SQLite repositorios
 
 class Program
 {
@@ -19,55 +20,359 @@ class Program
         using var connection = factory.CreateConnection();
         using var channel = connection.CreateModel();
 
-        // Crear instancia del repositorio MongoDB
-        var repository = new MessageRepository();
+        // Repositorios activos en paralelo
+        var mongoRepository = new MessageRepository();
+        var sqliteRepository = new SqliteMessageRepository();
 
-        // Declarar exchange principal durable
-        channel.ExchangeDeclare(exchange: "demo-exchange", type: "direct", durable: true, autoDelete: false);
+        // =======================
+        // DECLARAR EXCHANGE PRINCIPAL
+        // =======================
+        channel.ExchangeDeclare(
+            exchange: "demo-exchange",
+            type: "direct",
+            durable: true,
+            autoDelete: false
+        );
 
-        // Declarar cola principal con DLX
+        // =======================
+        // DECLARAR QUEUE PRINCIPAL CON DLX
+        // =======================
         var args = new Dictionary<string, object>
         {
             { "x-dead-letter-exchange", "dlx-exchange" }
         };
-        channel.QueueDeclare(queue: "demo-queue", durable: true, exclusive: false, autoDelete: false, arguments: args);
-        channel.QueueBind(queue: "demo-queue", exchange: "demo-exchange", routingKey: "demo.key");
 
-        // Declarar DLX
-        channel.ExchangeDeclare(exchange: "dlx-exchange", type: "fanout", durable: true, autoDelete: false);
-        channel.QueueDeclare(queue: "dlx-queue", durable: true, exclusive: false, autoDelete: false);
-        channel.QueueBind(queue: "dlx-queue", exchange: "dlx-exchange", routingKey: "");
+        channel.QueueDeclare(
+            queue: "demo-queue",
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
+            arguments: args
+        );
 
-        // Consumer para la cola principal (simula fallo para enviar mensajes a DLX)
+        channel.QueueBind(
+            queue: "demo-queue",
+            exchange: "demo-exchange",
+            routingKey: "demo.key"
+        );
+
+        // =======================
+        // DECLARAR DLX
+        // =======================
+        channel.ExchangeDeclare(
+            exchange: "dlx-exchange",
+            type: "fanout",
+            durable: true,
+            autoDelete: false
+        );
+
+        channel.QueueDeclare(
+            queue: "dlx-queue",
+            durable: true,
+            exclusive: false,
+            autoDelete: false
+        );
+
+        channel.QueueBind(
+            queue: "dlx-queue",
+            exchange: "dlx-exchange",
+            routingKey: ""
+        );
+
+        // =======================
+        // CONSUMER PRINCIPAL
+        // =======================
         var consumer = new EventingBasicConsumer(channel);
+
         consumer.Received += async (model, ea) =>
         {
             var body = ea.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
+
             Console.WriteLine($"[Consumer] Mensaje recibido: {message}");
 
-            // Guardar en MongoDB
-            await repository.SaveMessageAsync(message);
+            // Guardar en MongoDB (async)
+            await mongoRepository.SaveMessageAsync(message);
 
-            // Rechazar mensaje para que vaya a DLX
-            channel.BasicReject(ea.DeliveryTag, false); // false = no requeue
+            // Guardar en SQLite (NO async)
+            sqliteRepository.SaveMessage(message);
+
+            // Enviar mensaje a DLX
+            channel.BasicReject(ea.DeliveryTag, false);
         };
-        channel.BasicConsume(queue: "demo-queue", autoAck: false, consumer: consumer);
 
-        // Consumer para la DLX
+        channel.BasicConsume(
+            queue: "demo-queue",
+            autoAck: false,
+            consumer: consumer
+        );
+
+        // =======================
+        // CONSUMER DEL DLX
+        // =======================
         var dlxConsumer = new EventingBasicConsumer(channel);
+
         dlxConsumer.Received += (model, ea) =>
         {
             var body = ea.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
+
             Console.WriteLine($"[DLX] Mensaje recibido: {message}");
         };
-        channel.BasicConsume(queue: "dlx-queue", autoAck: true, consumer: dlxConsumer);
 
-        Console.WriteLine("Esperando mensajes en cola principal y DLX. Presiona ENTER para salir.");
+        channel.BasicConsume(
+            queue: "dlx-queue",
+            autoAck: true,
+            consumer: dlxConsumer
+        );
+
+        Console.WriteLine("Escuchando mensajes en cola principal + DLX + MongoDB + SQLite. ENTER para salir.");
         Console.ReadLine();
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using RabbitMQ.Client;
+// using RabbitMQ.Client.Events;
+// using System;
+// using System.Text;
+// using System.Collections.Generic;
+
+// using Consumer.Repositories;   // MongoDB + SQLite usarán estos repositorios
+
+// class Program
+// {
+//     static void Main()
+//     {
+//         var factory = new ConnectionFactory()
+//         {
+//             HostName = "localhost",
+//             UserName = "guest",
+//             Password = "guest"
+//         };
+
+//         using var connection = factory.CreateConnection();
+//         using var channel = connection.CreateModel();
+
+//         // Crear repositorios: MongoDB + SQLite (AMBOS ACTIVOS)
+//         var mongoRepository = new MessageRepository();
+//         var sqliteRepository = new SqliteMessageRepository();
+
+//         // =======================
+//         // DECLARAR EXCHANGE PRINCIPAL
+//         // =======================
+//         channel.ExchangeDeclare(
+//             exchange: "demo-exchange",
+//             type: "direct",
+//             durable: true,
+//             autoDelete: false
+//         );
+
+//         // =======================
+//         // DECLARAR QUEUE PRINCIPAL CON DLX
+//         // =======================
+//         var args = new Dictionary<string, object>
+//         {
+//             { "x-dead-letter-exchange", "dlx-exchange" }
+//         };
+
+//         channel.QueueDeclare(
+//             queue: "demo-queue",
+//             durable: true,
+//             exclusive: false,
+//             autoDelete: false,
+//             arguments: args
+//         );
+
+//         channel.QueueBind(
+//             queue: "demo-queue",
+//             exchange: "demo-exchange",
+//             routingKey: "demo.key"
+//         );
+
+//         // =======================
+//         // DECLARAR DLX
+//         // =======================
+//         channel.ExchangeDeclare(
+//             exchange: "dlx-exchange",
+//             type: "fanout",
+//             durable: true,
+//             autoDelete: false
+//         );
+
+//         channel.QueueDeclare(
+//             queue: "dlx-queue",
+//             durable: true,
+//             exclusive: false,
+//             autoDelete: false
+//         );
+
+//         channel.QueueBind(
+//             queue: "dlx-queue",
+//             exchange: "dlx-exchange",
+//             routingKey: ""
+//         );
+
+//         // =======================
+//         // CONSUMER PRINCIPAL
+//         // =======================
+//         var consumer = new EventingBasicConsumer(channel);
+
+//         consumer.Received += async (model, ea) =>
+//         {
+//             var body = ea.Body.ToArray();
+//             var message = Encoding.UTF8.GetString(body);
+
+//             Console.WriteLine($"[Consumer] Mensaje recibido: {message}");
+
+//             // Guardar en MongoDB
+//             await mongoRepository.SaveMessageAsync(message);
+
+//             // Guardar en SQLite
+//             await sqliteRepository.SaveMessageAsync(message);
+
+//             // Forzar envío a DLX
+//             channel.BasicReject(ea.DeliveryTag, false);
+//         };
+
+//         channel.BasicConsume(
+//             queue: "demo-queue",
+//             autoAck: false,
+//             consumer: consumer
+//         );
+
+//         // =======================
+//         // CONSUMER DLX
+//         // =======================
+//         var dlxConsumer = new EventingBasicConsumer(channel);
+
+//         dlxConsumer.Received += (model, ea) =>
+//         {
+//             var body = ea.Body.ToArray();
+//             var message = Encoding.UTF8.GetString(body);
+
+//             Console.WriteLine($"[DLX] Mensaje recibido: {message}");
+//         };
+
+//         channel.BasicConsume(
+//             queue: "dlx-queue",
+//             autoAck: true,
+//             consumer: dlxConsumer
+//         );
+
+//         Console.WriteLine("Escuchando mensajes en cola principal + DLX + MongoDB + SQLite. ENTER para salir.");
+//         Console.ReadLine();
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using RabbitMQ.Client;
+// using RabbitMQ.Client.Events;
+// using System;
+// using System.Text;
+// using System.Collections.Generic;
+// using Consumer.Repositories;   // <-- IMPORTANTE: referencia al repositorio MongoDB
+
+// class Program
+// {
+//     static void Main()
+//     {
+//         var factory = new ConnectionFactory()
+//         {
+//             HostName = "localhost",
+//             UserName = "guest",
+//             Password = "guest"
+//         };
+
+//         using var connection = factory.CreateConnection();
+//         using var channel = connection.CreateModel();
+
+//         // Crear instancia del repositorio MongoDB
+//         var repository = new MessageRepository();
+
+//         // Declarar exchange principal durable
+//         channel.ExchangeDeclare(exchange: "demo-exchange", type: "direct", durable: true, autoDelete: false);
+
+//         // Declarar cola principal con DLX
+//         var args = new Dictionary<string, object>
+//         {
+//             { "x-dead-letter-exchange", "dlx-exchange" }
+//         };
+//         channel.QueueDeclare(queue: "demo-queue", durable: true, exclusive: false, autoDelete: false, arguments: args);
+//         channel.QueueBind(queue: "demo-queue", exchange: "demo-exchange", routingKey: "demo.key");
+
+//         // Declarar DLX
+//         channel.ExchangeDeclare(exchange: "dlx-exchange", type: "fanout", durable: true, autoDelete: false);
+//         channel.QueueDeclare(queue: "dlx-queue", durable: true, exclusive: false, autoDelete: false);
+//         channel.QueueBind(queue: "dlx-queue", exchange: "dlx-exchange", routingKey: "");
+
+//         // Consumer para la cola principal (simula fallo para enviar mensajes a DLX)
+//         var consumer = new EventingBasicConsumer(channel);
+//         consumer.Received += async (model, ea) =>
+//         {
+//             var body = ea.Body.ToArray();
+//             var message = Encoding.UTF8.GetString(body);
+//             Console.WriteLine($"[Consumer] Mensaje recibido: {message}");
+
+//             // Guardar en MongoDB
+//             await repository.SaveMessageAsync(message);
+
+//             // Rechazar mensaje para que vaya a DLX
+//             channel.BasicReject(ea.DeliveryTag, false); // false = no requeue
+//         };
+//         channel.BasicConsume(queue: "demo-queue", autoAck: false, consumer: consumer);
+
+//         // Consumer para la DLX
+//         var dlxConsumer = new EventingBasicConsumer(channel);
+//         dlxConsumer.Received += (model, ea) =>
+//         {
+//             var body = ea.Body.ToArray();
+//             var message = Encoding.UTF8.GetString(body);
+//             Console.WriteLine($"[DLX] Mensaje recibido: {message}");
+//         };
+//         channel.BasicConsume(queue: "dlx-queue", autoAck: true, consumer: dlxConsumer);
+
+//         Console.WriteLine("Esperando mensajes en cola principal y DLX. Presiona ENTER para salir.");
+//         Console.ReadLine();
+//     }
+// }
 
 
 
