@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>RabbitDemo Dashboard</title>
+</head>
+<body>
+    <h1>Dashboard RabbitDemo</h1>
+    <div>
+        <p>Mensajes totales en SQLite: <span id="sqlite-count">Cargando...</span></p>
+        <p>Mensajes totales en MongoDB: <span id="mongo-count">Cargando...</span></p>
+    </div>
+    <div>
+        <input type="text" id="message-input" placeholder="Mensaje de prueba">
+        <button id="send-btn">Enviar a RabbitMQ</button>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -90,7 +90,6 @@ class Program
 
 
 
-
 // using RabbitMQ.Client;
 // using RabbitMQ.Client.Events;
 // using System;
