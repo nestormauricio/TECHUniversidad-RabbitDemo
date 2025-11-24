@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using RabbitDemo.MongoDb; // <-- aquí sí se necesita el using
+using Consumer.Repositories; // Para MessageRepository
+using System.Threading.Tasks;
 
 namespace RabbitDemo.Api.Controllers
 {
@@ -7,28 +8,397 @@ namespace RabbitDemo.Api.Controllers
     [Route("api/[controller]")]
     public class MessagesController : ControllerBase
     {
-        private readonly MongoDbService _mongoDbService;
+        private readonly MessageRepository _messageRepository;
 
         public MessagesController()
         {
-            _mongoDbService = new MongoDbService("mongodb://localhost:27017", "RabbitDemoDb");
+            _messageRepository = new MessageRepository();
         }
 
+        // POST api/messages
         [HttpPost]
-        public IActionResult AddMessage([FromBody] string content)
+        public async Task<IActionResult> AddMessage([FromBody] string content)
         {
-            _mongoDbService.AddMessage(content);
+            if (string.IsNullOrWhiteSpace(content))
+                return BadRequest("El mensaje no puede estar vacío.");
+
+            await _messageRepository.SaveMessageAsync(content);
             return Ok();
         }
 
+        // GET api/messages
         [HttpGet]
         public IActionResult GetMessages()
         {
-            var messages = _mongoDbService.GetAllMessages();
-            return Ok(messages);
+            var allMessages = _messageRepository.GetAllMessages();
+            return Ok(allMessages);
+        }
+
+        // GET api/messages/count
+        [HttpGet("count")]
+        public async Task<IActionResult> GetCounts()
+        {
+            var counts = await _messageRepository.GetCountsAsync();
+
+            return Ok(new
+            {
+                Sqlite = counts.sqliteCount,
+                MongoDB = counts.mongoCount
+            });
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using Microsoft.AspNetCore.Mvc;
+// using Consumer.Repositories; // Para MessageRepository
+// using System.Threading.Tasks;
+
+// namespace RabbitDemo.Api.Controllers
+// {
+//     [ApiController]
+//     [Route("api/[controller]")]
+//     public class MessagesController : ControllerBase
+//     {
+//         private readonly MessageRepository _messageRepository;
+
+//         public MessagesController()
+//         {
+//             _messageRepository = new MessageRepository();
+//         }
+
+//         // POST api/messages
+//         [HttpPost]
+//         public async Task<IActionResult> AddMessage([FromBody] string content)
+//         {
+//             if (string.IsNullOrWhiteSpace(content))
+//                 return BadRequest("El mensaje no puede estar vacío.");
+
+//             await _messageRepository.SaveMessageAsync(content);
+//             return Ok();
+//         }
+
+//         // GET api/messages
+//         [HttpGet]
+//         public IActionResult GetMessages()
+//         {
+//             var allMessages = _messageRepository.GetAllMessages();
+//             return Ok(allMessages);
+//         }
+
+//         // GET api/messages/count
+//         [HttpGet("count")]
+//         public async Task<IActionResult> GetCounts()
+//         {
+//             var counts = await _messageRepository.GetCountsAsync();
+
+//             return Ok(new
+//             {
+//                 Sqlite = counts.sqliteCount,
+//                 MongoDB = counts.mongoCount
+//             });
+//         }
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using Microsoft.AspNetCore.Mvc;
+// using Consumer.Repositories; // Para MessageRepository
+// using System.Threading.Tasks;
+
+// namespace RabbitDemo.Api.Controllers
+// {
+//     [ApiController]
+//     [Route("api/[controller]")]
+//     public class MessagesController : ControllerBase
+//     {
+//         private readonly MessageRepository _messageRepository;
+
+//         public MessagesController()
+//         {
+//             _messageRepository = new MessageRepository();
+//         }
+
+//         // POST api/messages
+//         [HttpPost]
+//         public async Task<IActionResult> AddMessage([FromBody] string content)
+//         {
+//             if (string.IsNullOrWhiteSpace(content))
+//                 return BadRequest("El mensaje no puede estar vacío.");
+
+//             await _messageRepository.SaveMessageAsync(content);
+//             return Ok();
+//         }
+
+//         // GET api/messages
+//         [HttpGet]
+//         public async Task<IActionResult> GetMessages()
+//         {
+//             var allMessages = _messageRepository.GetAllMessages();
+//             var counts = await _messageRepository.GetCountsAsync();
+
+//             return Ok(new
+//             {
+//                 Messages = allMessages,
+//                 SqliteCount = counts.sqliteCount,
+//                 MongoCount = counts.mongoCount
+//             });
+//         }
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using Microsoft.AspNetCore.Mvc;
+// using RabbitDemo.MongoDb; // <-- necesario
+
+// namespace RabbitDemo.Api.Controllers
+// {
+//     [ApiController]
+//     [Route("api/[controller]")]
+//     public class MessagesController : ControllerBase
+//     {
+//         private readonly MongoDbService _mongoDbService;
+
+//         public MessagesController()
+//         {
+//             _mongoDbService = new MongoDbService("mongodb://localhost:27017", "RabbitDemoDb");
+//         }
+
+//         [HttpPost]
+//         public IActionResult AddMessage([FromBody] string content)
+//         {
+//             _mongoDbService.AddMessage(content);
+//             return Ok();
+//         }
+
+//         [HttpGet]
+//         public IActionResult GetMessages()
+//         {
+//             var messages = _mongoDbService.GetAllMessages();
+//             return Ok(messages);
+//         }
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using Microsoft.AspNetCore.Mvc;
+// using RabbitDemo.MongoDb; // <-- aquí sí se necesita el using
+
+// namespace RabbitDemo.Api.Controllers
+// {
+//     [ApiController]
+//     [Route("api/[controller]")]
+//     public class MessagesController : ControllerBase
+//     {
+//         private readonly MongoDbService _mongoDbService;
+
+//         public MessagesController()
+//         {
+//             _mongoDbService = new MongoDbService("mongodb://localhost:27017", "RabbitDemoDb");
+//         }
+
+//         [HttpPost]
+//         public IActionResult AddMessage([FromBody] string content)
+//         {
+//             _mongoDbService.AddMessage(content);
+//             return Ok();
+//         }
+
+//         [HttpGet]
+//         public IActionResult GetMessages()
+//         {
+//             var messages = _mongoDbService.GetAllMessages();
+//             return Ok(messages);
+//         }
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using Microsoft.AspNetCore.Mvc;
+// using RabbitDemo.MongoDb;
+// using RabbitDemo.Sqlite; // <-- necesitamos SQLite también
+
+// namespace RabbitDemo.Api.Controllers
+// {
+//     [ApiController]
+//     [Route("api/[controller]")]
+//     public class MessagesController : ControllerBase
+//     {
+//         private readonly MongoDbService _mongoDbService;
+//         private readonly SqliteMessageRepository _sqliteRepo;
+
+//         public MessagesController()
+//         {
+//             _mongoDbService = new MongoDbService("mongodb://localhost:27017", "RabbitDemoDb");
+            
+//             // Ajusta la ruta a tu archivo SQLite messages.db según tu árbol de carpetas:
+//             _sqliteRepo = new SqliteMessageRepository(
+//                 @"C:\Proyectos\TECHUniversidad\RabbitDemo\Consumer\bin\Debug\net9.0\SqliteDb\messages.db"
+//             );
+//         }
+
+//         // POST para agregar mensaje a MongoDB y SQLite
+//         [HttpPost]
+//         public IActionResult AddMessage([FromBody] string content)
+//         {
+//             try
+//             {
+//                 _mongoDbService.AddMessage(content);
+//                 _sqliteRepo.AddMessage(content); // agrega también a SQLite
+//                 return Ok();
+//             }
+//             catch (Exception ex)
+//             {
+//                 return BadRequest(new { error = ex.Message });
+//             }
+//         }
+
+//         // GET todos los mensajes de MongoDB
+//         [HttpGet("mongo")]
+//         public IActionResult GetMongoMessages()
+//         {
+//             try
+//             {
+//                 var messages = _mongoDbService.GetAllMessages();
+//                 return Ok(messages);
+//             }
+//             catch (Exception ex)
+//             {
+//                 return BadRequest(new { error = ex.Message });
+//             }
+//         }
+
+//         // GET cantidad de mensajes en SQLite
+//         [HttpGet("sqlite/count")]
+//         public IActionResult GetSqliteCount()
+//         {
+//             try
+//             {
+//                 var count = _sqliteRepo.GetMessageCount();
+//                 return Ok(new { count });
+//             }
+//             catch (Exception ex)
+//             {
+//                 return BadRequest(new { error = ex.Message });
+//             }
+//         }
+
+//         // GET cantidad de mensajes en MongoDB
+//         [HttpGet("mongo/count")]
+//         public IActionResult GetMongoCount()
+//         {
+//             try
+//             {
+//                 var count = _mongoDbService.GetAllMessages().Count;
+//                 return Ok(new { count });
+//             }
+//             catch (Exception ex)
+//             {
+//                 return BadRequest(new { error = ex.Message });
+//             }
+//         }
+//     }
+// }
+
+
 
 
 

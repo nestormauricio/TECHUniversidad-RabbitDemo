@@ -10,7 +10,6 @@ namespace RabbitDemo.MongoDb
     {
         private readonly IMongoCollection<BsonDocument> _messagesCollection;
 
-        // Constructor: conexión a MongoDB
         public MongoDbService(string connectionString, string databaseName)
         {
             var client = new MongoClient(connectionString);
@@ -18,18 +17,16 @@ namespace RabbitDemo.MongoDb
             _messagesCollection = database.GetCollection<BsonDocument>("Messages");
         }
 
-        // Agregar mensaje
         public void AddMessage(string content)
         {
             var document = new BsonDocument
             {
                 { "Content", content },
-                { "CreatedAt", DateTime.UtcNow } // Cambio seguro: sin BsonValue.Create
+                { "CreatedAt", DateTime.UtcNow }
             };
             _messagesCollection.InsertOne(document);
         }
 
-        // Obtener todos los mensajes
         public List<string> GetAllMessages()
         {
             return _messagesCollection.Find(new BsonDocument())
@@ -40,6 +37,71 @@ namespace RabbitDemo.MongoDb
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using MongoDB.Bson;
+// using MongoDB.Driver;
+// using System;
+// using System.Collections.Generic;
+// using System.Linq;
+
+// namespace RabbitDemo.MongoDb
+// {
+//     public class MongoDbService
+//     {
+//         private readonly IMongoCollection<BsonDocument> _messagesCollection;
+
+//         // Constructor: conexión a MongoDB
+//         public MongoDbService(string connectionString, string databaseName)
+//         {
+//             var client = new MongoClient(connectionString);
+//             var database = client.GetDatabase(databaseName);
+//             _messagesCollection = database.GetCollection<BsonDocument>("Messages");
+//         }
+
+//         // Agregar mensaje
+//         public void AddMessage(string content)
+//         {
+//             var document = new BsonDocument
+//             {
+//                 { "Content", content },
+//                 { "CreatedAt", DateTime.UtcNow } // Cambio seguro: sin BsonValue.Create
+//             };
+//             _messagesCollection.InsertOne(document);
+//         }
+
+//         // Obtener todos los mensajes
+//         public List<string> GetAllMessages()
+//         {
+//             return _messagesCollection.Find(new BsonDocument())
+//                                       .Sort(Builders<BsonDocument>.Sort.Ascending("_id"))
+//                                       .ToList()
+//                                       .Select(doc => doc["Content"].AsString)
+//                                       .ToList();
+//         }
+//     }
+// }
 
 
 
