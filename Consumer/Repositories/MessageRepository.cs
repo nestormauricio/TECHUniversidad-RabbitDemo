@@ -14,30 +14,39 @@ namespace Consumer.Repositories
 
         public MessageRepository()
         {
-            // ===============================================
-            // RUTA ABSOLUTA COMPARTIDA ENTRE API Y CONSUMER
-            // ===============================================
+            // ================================================================
+            // RUTA ABSOLUTA QUE COMPARTEN LA API Y EL CONSUMER
+            // ================================================================
+            //
+            // AppContext.BaseDirectory dentro de Consumer/bin/Debug/net9.0/
+            // Sube 4 niveles para llegar a:
+            // C:\Proyectos\TECHUniversidad\RabbitDemo\Consumer
+            //
+            // Dentro de allí creamos:
+            // C:\Proyectos\TECHUniversidad\RabbitDemo\Consumer\bin\Debug\net9.0\SqliteDb
+            //
+            // El archivo final compartido será:
+            // C:\Proyectos\TECHUniversidad\RabbitDemo\Consumer\bin\Debug\net9.0\SqliteDb\messages.db
+            // ================================================================
 
-            // Directorio raíz del proyecto Consumer (sube 4 niveles)
             var consumerRoot = Path.GetFullPath(
                 Path.Combine(AppContext.BaseDirectory, "..\\..\\..\\..\\Consumer")
             );
 
-            // Carpeta SQLite que ambos deben usar
             var sqliteFolder = Path.Combine(consumerRoot, "bin\\Debug\\net9.0\\SqliteDb");
-
             Directory.CreateDirectory(sqliteFolder);
 
-            // ARCHIVO FINAL QUE AMBOS LEEN Y ESCRIBEN
             _sqliteFilePath = Path.Combine(sqliteFolder, "messages.db");
 
-            // Asegurar BD y tabla
             EnsureSqliteDatabaseAndTable();
 
-            // MongoDB inicializa si es posible
+            // Inicializar MongoDB
             try
             {
-                _mongoDbService = new MongoDbService("mongodb://localhost:27017", "RabbitDemoDb");
+                _mongoDbService = new MongoDbService(
+                    "mongodb://localhost:27017",
+                    "RabbitDemoDb"
+                );
             }
             catch
             {
@@ -47,10 +56,12 @@ namespace Consumer.Repositories
 
         private void EnsureSqliteDatabaseAndTable()
         {
-            var connectionString = $"Data Source={_sqliteFilePath};Mode=ReadWriteCreate;Cache=Shared";
+            var connectionString =
+                $"Data Source={_sqliteFilePath};Mode=ReadWriteCreate;Cache=Shared";
 
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
+
             using var command = connection.CreateCommand();
             command.CommandText = @"
                 CREATE TABLE IF NOT EXISTS Messages (
@@ -62,50 +73,54 @@ namespace Consumer.Repositories
             command.ExecuteNonQuery();
         }
 
-        // ================================================
+        // ================================================================
         // GUARDAR MENSAJE EN SQLite Y MongoDB
-        // ================================================
+        // ================================================================
         public async Task SaveMessageAsync(string content)
         {
-            var connectionString = $"Data Source={_sqliteFilePath};Mode=ReadWrite;Cache=Shared";
+            var connectionString =
+                $"Data Source={_sqliteFilePath};Mode=ReadWrite;Cache=Shared";
 
             using var connection = new SqliteConnection(connectionString);
             await connection.OpenAsync();
-            using var command = connection.CreateCommand();
 
-            command.CommandText = "INSERT INTO Messages (Content, CreatedAt) VALUES ($content, $createdAt);";
+            using var command = connection.CreateCommand();
+            command.CommandText =
+                "INSERT INTO Messages (Content, CreatedAt) VALUES ($content, $createdAt);";
             command.Parameters.AddWithValue("$content", content);
             command.Parameters.AddWithValue("$createdAt", DateTime.UtcNow.ToString("o"));
 
             await command.ExecuteNonQueryAsync();
 
-            // Guardar también en Mongo
+            // Guardar también en MongoDB
             if (_mongoDbService != null)
             {
                 try
                 {
-                    await Task.Run(() => _mongoDbService.AddMessage(content));
+                    _mongoDbService.AddMessage(content);
                 }
                 catch
                 {
-                    // Ignorar errores de Mongo sin romper flujo
+                    // No detener flujo si Mongo falla
                 }
             }
         }
 
-        // ================================================
+        // ================================================================
         // OBTENER TODOS LOS MENSAJES DESDE SQLite
-        // ================================================
+        // ================================================================
         public List<string> GetAllMessages()
         {
             var messages = new List<string>();
-            var connectionString = $"Data Source={_sqliteFilePath};Mode=ReadWrite;Cache=Shared";
+            var connectionString =
+                $"Data Source={_sqliteFilePath};Mode=ReadWrite;Cache=Shared";
 
             using var connection = new SqliteConnection(connectionString);
             connection.Open();
 
             using var command = connection.CreateCommand();
-            command.CommandText = "SELECT Content FROM Messages ORDER BY Id;";
+            command.CommandText =
+                "SELECT Content FROM Messages ORDER BY Id;";
 
             using var reader = command.ExecuteReader();
             while (reader.Read())
@@ -116,21 +131,24 @@ namespace Consumer.Repositories
             return messages;
         }
 
-        // ================================================
-        // OBTENER CONTEO SQLite Y Mongo
-        // ================================================
+        // ================================================================
+        // OBTENER CONTEO SQLite Y MongoDB (CountDocuments)
+        // ================================================================
         public async Task<(int sqliteCount, long mongoCount)> GetCountsAsync(bool sqliteOnly = false)
         {
-            int sqliteCount = 0;
+            int sqliteCount;
             long mongoCount = 0;
 
-            var connectionString = $"Data Source={_sqliteFilePath};Mode=ReadWrite;Cache=Shared";
+            var connectionString =
+                $"Data Source={_sqliteFilePath};Mode=ReadWrite;Cache=Shared";
 
             using (var connection = new SqliteConnection(connectionString))
             {
                 await connection.OpenAsync();
+
                 using var command = connection.CreateCommand();
                 command.CommandText = "SELECT COUNT(*) FROM Messages;";
+
                 var result = await command.ExecuteScalarAsync();
                 sqliteCount = Convert.ToInt32(result ?? 0);
             }
@@ -139,7 +157,7 @@ namespace Consumer.Repositories
             {
                 try
                 {
-                    mongoCount = await Task.Run(() => _mongoDbService.GetAllMessages().Count);
+                    mongoCount = _mongoDbService.CountMessages();
                 }
                 catch
                 {
@@ -151,6 +169,359 @@ namespace Consumer.Repositories
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using Microsoft.Data.Sqlite;
+// using RabbitDemo.MongoDb;
+// using System;
+// using System.Collections.Generic;
+// using System.IO;
+// using System.Threading.Tasks;
+
+// namespace Consumer.Repositories
+// {
+//     public class MessageRepository
+//     {
+//         private readonly MongoDbService? _mongoDbService;
+//         private readonly string _sqliteFilePath;
+
+//         public MessageRepository()
+//         {
+//             // ===============================================
+//             // RUTA ABSOLUTA COMPARTIDA ENTRE API Y CONSUMER
+//             // ===============================================
+
+//             // Directorio raíz del proyecto Consumer (sube 4 niveles)
+//             var consumerRoot = Path.GetFullPath(
+//                 Path.Combine(AppContext.BaseDirectory, "..\\..\\..\\..\\Consumer")
+//             );
+
+//             // Carpeta SQLite que ambos deben usar
+//             var sqliteFolder = Path.Combine(consumerRoot, "bin\\Debug\\net9.0\\SqliteDb");
+
+//             Directory.CreateDirectory(sqliteFolder);
+
+//             // ARCHIVO FINAL QUE AMBOS LEEN Y ESCRIBEN
+//             _sqliteFilePath = Path.Combine(sqliteFolder, "messages.db");
+
+//             // Asegurar BD y tabla
+//             EnsureSqliteDatabaseAndTable();
+
+//             // MongoDB inicializa si es posible
+//             try
+//             {
+//                 _mongoDbService = new MongoDbService("mongodb://localhost:27017", "RabbitDemoDb");
+//             }
+//             catch
+//             {
+//                 _mongoDbService = null;
+//             }
+//         }
+
+//         private void EnsureSqliteDatabaseAndTable()
+//         {
+//             var connectionString = $"Data Source={_sqliteFilePath};Mode=ReadWriteCreate;Cache=Shared";
+
+//             using var connection = new SqliteConnection(connectionString);
+//             connection.Open();
+//             using var command = connection.CreateCommand();
+//             command.CommandText = @"
+//                 CREATE TABLE IF NOT EXISTS Messages (
+//                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
+//                     Content TEXT NOT NULL,
+//                     CreatedAt TEXT NOT NULL
+//                 );
+//             ";
+//             command.ExecuteNonQuery();
+//         }
+
+//         // ================================================
+//         // GUARDAR MENSAJE EN SQLite Y MongoDB
+//         // ================================================
+//         public async Task SaveMessageAsync(string content)
+//         {
+//             var connectionString = $"Data Source={_sqliteFilePath};Mode=ReadWrite;Cache=Shared";
+
+//             using var connection = new SqliteConnection(connectionString);
+//             await connection.OpenAsync();
+
+//             using var command = connection.CreateCommand();
+//             command.CommandText = "INSERT INTO Messages (Content, CreatedAt) VALUES ($content, $createdAt);";
+//             command.Parameters.AddWithValue("$content", content);
+//             command.Parameters.AddWithValue("$createdAt", DateTime.UtcNow.ToString("o"));
+
+//             await command.ExecuteNonQueryAsync();
+
+//             // Guardar también en Mongo
+//             if (_mongoDbService != null)
+//             {
+//                 try
+//                 {
+//                     await Task.Run(() => _mongoDbService.AddMessage(content));
+//                 }
+//                 catch
+//                 {
+//                     // Ignorar errores de Mongo sin romper flujo
+//                 }
+//             }
+//         }
+
+//         // ================================================
+//         // OBTENER TODOS LOS MENSAJES DESDE SQLite
+//         // ================================================
+//         public List<string> GetAllMessages()
+//         {
+//             var messages = new List<string>();
+//             var connectionString = $"Data Source={_sqliteFilePath};Mode=ReadWrite;Cache=Shared";
+
+//             using var connection = new SqliteConnection(connectionString);
+//             connection.Open();
+
+//             using var command = connection.CreateCommand();
+//             command.CommandText = "SELECT Content FROM Messages ORDER BY Id;";
+
+//             using var reader = command.ExecuteReader();
+//             while (reader.Read())
+//             {
+//                 messages.Add(reader.GetString(0));
+//             }
+
+//             return messages;
+//         }
+
+//         // ================================================
+//         // OBTENER CONTEO SQLite Y Mongo (con CountDocuments)
+//         // ================================================
+//         public async Task<(int sqliteCount, long mongoCount)> GetCountsAsync(bool sqliteOnly = false)
+//         {
+//             int sqliteCount = 0;
+//             long mongoCount = 0;
+
+//             var connectionString = $"Data Source={_sqliteFilePath};Mode=ReadWrite;Cache=Shared";
+
+//             using (var connection = new SqliteConnection(connectionString))
+//             {
+//                 await connection.OpenAsync();
+//                 using var command = connection.CreateCommand();
+//                 command.CommandText = "SELECT COUNT(*) FROM Messages;";
+//                 var result = await command.ExecuteScalarAsync();
+//                 sqliteCount = Convert.ToInt32(result ?? 0);
+//             }
+
+//             // MongoDB usando CountDocuments(), NO GetAllMessages().Count
+//             if (!sqliteOnly && _mongoDbService != null)
+//             {
+//                 try
+//                 {
+//                     mongoCount = _mongoDbService.CountMessages();
+//                 }
+//                 catch
+//                 {
+//                     mongoCount = 0;
+//                 }
+//             }
+
+//             return (sqliteCount, mongoCount);
+//         }
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using Microsoft.Data.Sqlite;
+// using RabbitDemo.MongoDb;
+// using System;
+// using System.Collections.Generic;
+// using System.IO;
+// using System.Threading.Tasks;
+
+// namespace Consumer.Repositories
+// {
+//     public class MessageRepository
+//     {
+//         private readonly MongoDbService? _mongoDbService;
+//         private readonly string _sqliteFilePath;
+
+//         public MessageRepository()
+//         {
+//             // ===============================================
+//             // RUTA ABSOLUTA COMPARTIDA ENTRE API Y CONSUMER
+//             // ===============================================
+
+//             // Directorio raíz del proyecto Consumer (sube 4 niveles)
+//             var consumerRoot = Path.GetFullPath(
+//                 Path.Combine(AppContext.BaseDirectory, "..\\..\\..\\..\\Consumer")
+//             );
+
+//             // Carpeta SQLite que ambos deben usar
+//             var sqliteFolder = Path.Combine(consumerRoot, "bin\\Debug\\net9.0\\SqliteDb");
+
+//             Directory.CreateDirectory(sqliteFolder);
+
+//             // ARCHIVO FINAL QUE AMBOS LEEN Y ESCRIBEN
+//             _sqliteFilePath = Path.Combine(sqliteFolder, "messages.db");
+
+//             // Asegurar BD y tabla
+//             EnsureSqliteDatabaseAndTable();
+
+//             // MongoDB inicializa si es posible
+//             try
+//             {
+//                 _mongoDbService = new MongoDbService("mongodb://localhost:27017", "RabbitDemoDb");
+//             }
+//             catch
+//             {
+//                 _mongoDbService = null;
+//             }
+//         }
+
+//         private void EnsureSqliteDatabaseAndTable()
+//         {
+//             var connectionString = $"Data Source={_sqliteFilePath};Mode=ReadWriteCreate;Cache=Shared";
+
+//             using var connection = new SqliteConnection(connectionString);
+//             connection.Open();
+//             using var command = connection.CreateCommand();
+//             command.CommandText = @"
+//                 CREATE TABLE IF NOT EXISTS Messages (
+//                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
+//                     Content TEXT NOT NULL,
+//                     CreatedAt TEXT NOT NULL
+//                 );
+//             ";
+//             command.ExecuteNonQuery();
+//         }
+
+//         // ================================================
+//         // GUARDAR MENSAJE EN SQLite Y MongoDB
+//         // ================================================
+//         public async Task SaveMessageAsync(string content)
+//         {
+//             var connectionString = $"Data Source={_sqliteFilePath};Mode=ReadWrite;Cache=Shared";
+
+//             using var connection = new SqliteConnection(connectionString);
+//             await connection.OpenAsync();
+//             using var command = connection.CreateCommand();
+
+//             command.CommandText = "INSERT INTO Messages (Content, CreatedAt) VALUES ($content, $createdAt);";
+//             command.Parameters.AddWithValue("$content", content);
+//             command.Parameters.AddWithValue("$createdAt", DateTime.UtcNow.ToString("o"));
+
+//             await command.ExecuteNonQueryAsync();
+
+//             // Guardar también en Mongo
+//             if (_mongoDbService != null)
+//             {
+//                 try
+//                 {
+//                     await Task.Run(() => _mongoDbService.AddMessage(content));
+//                 }
+//                 catch
+//                 {
+//                     // Ignorar errores de Mongo sin romper flujo
+//                 }
+//             }
+//         }
+
+//         // ================================================
+//         // OBTENER TODOS LOS MENSAJES DESDE SQLite
+//         // ================================================
+//         public List<string> GetAllMessages()
+//         {
+//             var messages = new List<string>();
+//             var connectionString = $"Data Source={_sqliteFilePath};Mode=ReadWrite;Cache=Shared";
+
+//             using var connection = new SqliteConnection(connectionString);
+//             connection.Open();
+
+//             using var command = connection.CreateCommand();
+//             command.CommandText = "SELECT Content FROM Messages ORDER BY Id;";
+
+//             using var reader = command.ExecuteReader();
+//             while (reader.Read())
+//             {
+//                 messages.Add(reader.GetString(0));
+//             }
+
+//             return messages;
+//         }
+
+//         // ================================================
+//         // OBTENER CONTEO SQLite Y Mongo
+//         // ================================================
+//         public async Task<(int sqliteCount, long mongoCount)> GetCountsAsync(bool sqliteOnly = false)
+//         {
+//             int sqliteCount = 0;
+//             long mongoCount = 0;
+
+//             var connectionString = $"Data Source={_sqliteFilePath};Mode=ReadWrite;Cache=Shared";
+
+//             using (var connection = new SqliteConnection(connectionString))
+//             {
+//                 await connection.OpenAsync();
+//                 using var command = connection.CreateCommand();
+//                 command.CommandText = "SELECT COUNT(*) FROM Messages;";
+//                 var result = await command.ExecuteScalarAsync();
+//                 sqliteCount = Convert.ToInt32(result ?? 0);
+//             }
+
+//             if (!sqliteOnly && _mongoDbService != null)
+//             {
+//                 try
+//                 {
+//                     mongoCount = await Task.Run(() => _mongoDbService.GetAllMessages().Count);
+//                 }
+//                 catch
+//                 {
+//                     mongoCount = 0;
+//                 }
+//             }
+
+//             return (sqliteCount, mongoCount);
+//         }
+//     }
+// }
 
 
 

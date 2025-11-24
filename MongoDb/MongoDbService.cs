@@ -2,41 +2,229 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace RabbitDemo.MongoDb
 {
     public class MongoDbService
     {
-        private readonly IMongoCollection<BsonDocument> _messagesCollection;
+        private readonly IMongoCollection<BsonDocument> _messages;
 
         public MongoDbService(string connectionString, string databaseName)
         {
             var client = new MongoClient(connectionString);
-            var database = client.GetDatabase(databaseName);
-            _messagesCollection = database.GetCollection<BsonDocument>("Messages");
+            var db = client.GetDatabase(databaseName);
+
+            // Colección correcta: Messages
+            _messages = db.GetCollection<BsonDocument>("Messages");
         }
 
         public void AddMessage(string content)
         {
-            var document = new BsonDocument
+            var doc = new BsonDocument
             {
                 { "Content", content },
                 { "CreatedAt", DateTime.UtcNow }
             };
-            _messagesCollection.InsertOne(document);
+
+            _messages.InsertOne(doc);
         }
 
-        public List<string> GetAllMessages()
+        public List<BsonDocument> GetAllMessages()
         {
-            return _messagesCollection.Find(new BsonDocument())
-                                      .Sort(Builders<BsonDocument>.Sort.Ascending("_id"))
-                                      .ToList()
-                                      .Select(doc => doc["Content"].AsString)
-                                      .ToList();
+            return _messages.Find(new BsonDocument()).ToList();
+        }
+
+        public long CountMessages()
+        {
+            return _messages.CountDocuments(new BsonDocument());
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using MongoDB.Bson;
+// using MongoDB.Driver;
+// using System;
+// using System.Collections.Generic;
+
+// namespace RabbitDemo.MongoDb
+// {
+//     public class MongoDbService
+//     {
+//         private readonly IMongoCollection<BsonDocument> _messages;
+
+//         public MongoDbService(string connectionString, string databaseName)
+//         {
+//             var client = new MongoClient(connectionString);
+//             var db = client.GetDatabase(databaseName);
+
+//             // ESTA es tu colección real: Messages
+//             _messages = db.GetCollection<BsonDocument>("Messages");
+//         }
+
+//         public void AddMessage(string content)
+//         {
+//             var doc = new BsonDocument
+//             {
+//                 { "text", content },
+//                 { "createdAt", DateTime.UtcNow }
+//             };
+
+//             _messages.InsertOne(doc);
+//         }
+
+//         public List<BsonDocument> GetAllMessages()
+//         {
+//             return _messages.Find(new BsonDocument()).ToList();
+//         }
+
+//         public long CountMessages()
+//         {
+//             return _messages.CountDocuments(new BsonDocument());
+//         }
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using MongoDB.Bson;
+// using MongoDB.Driver;
+// using System;
+// using System.Collections.Generic;
+
+// namespace RabbitDemo.MongoDb
+// {
+//     public class MongoDbService
+//     {
+//         private readonly IMongoCollection<BsonDocument> _messages;
+
+//         public MongoDbService(string connectionString, string databaseName)
+//         {
+//             var client = new MongoClient(connectionString);
+//             var db = client.GetDatabase(databaseName);
+
+//             // Esta es EXACTAMENTE la colección que tienes: "Messages"
+//             _messages = db.GetCollection<BsonDocument>("Messages");
+//         }
+
+//         public void AddMessage(string content)
+//         {
+//             var doc = new BsonDocument
+//             {
+//                 { "text", content },
+//                 { "createdAt", DateTime.UtcNow }
+//             };
+
+//             _messages.InsertOne(doc);
+//         }
+
+//         public List<BsonDocument> GetAllMessages()
+//         {
+//             return _messages.Find(new BsonDocument()).ToList();
+//         }
+
+//         public long CountMessages()
+//         {
+//             return _messages.CountDocuments(new BsonDocument());
+//         }
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using MongoDB.Bson;
+// using MongoDB.Driver;
+// using System;
+// using System.Collections.Generic;
+// using System.Linq;
+
+// namespace RabbitDemo.MongoDb
+// {
+//     public class MongoDbService
+//     {
+//         private readonly IMongoCollection<BsonDocument> _messagesCollection;
+
+//         public MongoDbService(string connectionString, string databaseName)
+//         {
+//             var client = new MongoClient(connectionString);
+//             var database = client.GetDatabase(databaseName);
+//             _messagesCollection = database.GetCollection<BsonDocument>("Messages");
+//         }
+
+//         public void AddMessage(string content)
+//         {
+//             var document = new BsonDocument
+//             {
+//                 { "Content", content },
+//                 { "CreatedAt", DateTime.UtcNow }
+//             };
+//             _messagesCollection.InsertOne(document);
+//         }
+
+//         public List<string> GetAllMessages()
+//         {
+//             return _messagesCollection.Find(new BsonDocument())
+//                                       .Sort(Builders<BsonDocument>.Sort.Ascending("_id"))
+//                                       .ToList()
+//                                       .Select(doc => doc["Content"].AsString)
+//                                       .ToList();
+//         }
+//     }
+// }
 
 
 
